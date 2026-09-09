@@ -12,6 +12,9 @@ function ProductDetails({ cart = [], addToCart }) {
   const [product, setProduct] = useState(location.state?.product || null);
   const [loading, setLoading] = useState(!location.state?.product);
 
+  // Cart popup
+  const [cartPopup, setCartPopup] = useState(false);
+
   // Wishlist
   const [wishlist, setWishlist] = useState(() => {
     const savedWishlist = localStorage.getItem("zevon-wishlist");
@@ -117,7 +120,7 @@ function ProductDetails({ cart = [], addToCart }) {
   );
 
   // Add product to cart
-  const addProductToCart = () => {
+  const addProductToCart = (showPopup = true) => {
     if (!product) return;
 
     const productForCart = {
@@ -129,11 +132,19 @@ function ProductDetails({ cart = [], addToCart }) {
     for (let i = 0; i < quantity; i += 1) {
       addToCart?.(productForCart);
     }
+
+    if (showPopup) {
+      setCartPopup(true);
+
+      setTimeout(() => {
+        setCartPopup(false);
+      }, 4000);
+    }
   };
 
   // Buy Now
   const handleBuyNow = () => {
-    addProductToCart();
+    addProductToCart(false);
     navigate("/cart");
   };
 
@@ -228,7 +239,90 @@ function ProductDetails({ cart = [], addToCart }) {
   return (
     <div className="min-h-screen bg-white text-black">
 
-      {/* HEADER */}
+      {/* ================= CART POPUP ================= */}
+      {cartPopup && (
+        <div className="fixed top-5 right-5 z-[100] w-[340px] max-w-[calc(100%-2rem)] bg-white border border-black/10 shadow-2xl">
+
+          <div className="flex items-center justify-between px-5 py-4 border-b border-black/10">
+
+            <div className="flex items-center gap-2">
+
+              <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs">
+                ✓
+              </span>
+
+              <p className="font-medium">
+                Added to cart
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setCartPopup(false)}
+              className="text-xl hover:opacity-50"
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+          </div>
+
+          <div className="p-4 flex gap-4">
+
+            <img
+              src={product.image_url}
+              alt={product.name}
+              className="w-20 h-20 object-cover bg-gray-100"
+            />
+
+            <div className="flex-1">
+
+              <p className="text-xs uppercase tracking-widest text-black/40">
+                {product.category}
+              </p>
+
+              <h3 className="font-medium mt-1">
+                {product.name}
+              </h3>
+
+              <p className="text-black/60 mt-1">
+                ₹{product.price}
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+
+            <button
+              type="button"
+              onClick={() => {
+                setCartPopup(false);
+              }}
+              className="border border-black py-2 text-sm hover:bg-black hover:text-white transition"
+            >
+              Continue Shopping
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCartPopup(false);
+                navigate("/cart");
+              }}
+              className="bg-black text-white py-2 text-sm hover:opacity-80 transition"
+            >
+              Go to Cart
+            </button>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* ================= HEADER ================= */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-black/10">
 
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
@@ -293,7 +387,7 @@ function ProductDetails({ cart = [], addToCart }) {
           {/* RIGHT SIDE */}
           <div className="flex items-center gap-5">
 
-            {/* MOBILE MENU BUTTON */}
+            {/* MOBILE MENU */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -401,7 +495,7 @@ function ProductDetails({ cart = [], addToCart }) {
 
       </header>
 
-      {/* PRODUCT */}
+      {/* ================= PRODUCT ================= */}
       <main className="max-w-7xl mx-auto px-6 py-12 md:py-20">
 
         <button
@@ -423,7 +517,7 @@ function ProductDetails({ cart = [], addToCart }) {
               className="w-full h-full object-cover"
             />
 
-            {/* WISHLIST BUTTON */}
+            {/* WISHLIST */}
             <button
               type="button"
               onClick={toggleWishlist}
@@ -454,7 +548,7 @@ function ProductDetails({ cart = [], addToCart }) {
               ₹{product.price}
             </p>
 
-            {/* RATING SUMMARY */}
+            {/* RATING */}
             <div className="flex items-center gap-3 mt-5">
 
               <span className="text-xl tracking-widest">
@@ -522,7 +616,7 @@ function ProductDetails({ cart = [], addToCart }) {
             {/* ADD TO CART */}
             <button
               type="button"
-              onClick={addProductToCart}
+              onClick={() => addProductToCart(true)}
               className="w-full bg-black text-white py-4 mt-8 text-sm tracking-wide hover:bg-black/80"
             >
               ADD TO CART →
@@ -547,9 +641,10 @@ function ProductDetails({ cart = [], addToCart }) {
             </div>
 
           </div>
+
         </div>
 
-        {/* REVIEWS SECTION */}
+        {/* ================= REVIEWS ================= */}
         <section className="border-t border-black/10 mt-20 pt-14">
 
           <div className="grid md:grid-cols-2 gap-12 lg:gap-20">

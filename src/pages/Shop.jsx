@@ -10,6 +10,8 @@ function Shop({ cart = [], addToCart }) {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const [cartPopup, setCartPopup] = useState(null);
+
   const [wishlist, setWishlist] = useState(() => {
     const savedWishlist = localStorage.getItem("zevon-wishlist");
 
@@ -75,6 +77,12 @@ function Shop({ cart = [], addToCart }) {
         image: product.image_url,
         price: `₹${product.price}`,
       });
+
+      setCartPopup(product);
+
+      setTimeout(() => {
+        setCartPopup(null);
+      }, 4000);
     }
   };
 
@@ -118,7 +126,89 @@ function Shop({ cart = [], addToCart }) {
   return (
     <div className="min-h-screen bg-white text-black">
 
-      {/* NAVBAR */}
+      {/* ================= CART POPUP ================= */}
+      {cartPopup && (
+        <div className="fixed top-5 right-5 z-[100] w-[340px] max-w-[calc(100%-2rem)] bg-white border border-black/10 shadow-2xl">
+
+          <div className="flex items-center justify-between px-5 py-4 border-b border-black/10">
+
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs">
+                ✓
+              </span>
+
+              <p className="font-medium">
+                Added to cart
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setCartPopup(null)}
+              className="text-xl hover:opacity-50"
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+          </div>
+
+          <div className="p-4 flex gap-4">
+
+            <img
+              src={cartPopup.image_url}
+              alt={cartPopup.name}
+              className="w-20 h-20 object-cover bg-gray-100"
+            />
+
+            <div className="flex-1">
+
+              <p className="text-xs uppercase tracking-widest text-black/40">
+                {cartPopup.category}
+              </p>
+
+              <h3 className="font-medium mt-1">
+                {cartPopup.name}
+              </h3>
+
+              <p className="text-black/60 mt-1">
+                ₹{cartPopup.price}
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+
+            <button
+              type="button"
+              onClick={() => {
+                setCartPopup(null);
+                openProduct(cartPopup);
+              }}
+              className="border border-black py-2 text-sm hover:bg-black hover:text-white transition"
+            >
+              View Details
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCartPopup(null);
+                navigate("/cart");
+              }}
+              className="bg-black text-white py-2 text-sm hover:opacity-80 transition"
+            >
+              Go to Cart
+            </button>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* ================= NAVBAR ================= */}
       <header className="sticky top-0 z-50 bg-white border-b border-black/10">
 
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
@@ -183,10 +273,12 @@ function Shop({ cart = [], addToCart }) {
           {/* RIGHT SIDE */}
           <div className="flex items-center gap-5">
 
-            {/* MOBILE MENU BUTTON */}
+            {/* MOBILE MENU */}
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={() =>
+                setMobileMenuOpen(!mobileMenuOpen)
+              }
               className="md:hidden text-2xl leading-none"
               aria-label="Open menu"
             >
@@ -290,8 +382,9 @@ function Shop({ cart = [], addToCart }) {
 
       </header>
 
-      {/* SHOP HEADER */}
+      {/* ================= SHOP HEADER ================= */}
       <section className="border-b border-black/10">
+
         <div className="max-w-7xl mx-auto px-6 py-12">
 
           <p className="text-xs tracking-[0.4em] uppercase text-black/50">
@@ -307,9 +400,10 @@ function Shop({ cart = [], addToCart }) {
           </p>
 
         </div>
+
       </section>
 
-      {/* CATEGORIES */}
+      {/* ================= CATEGORIES ================= */}
       <section className="max-w-7xl mx-auto px-6 py-10">
 
         <div className="flex flex-wrap gap-3">
@@ -333,7 +427,7 @@ function Shop({ cart = [], addToCart }) {
 
       </section>
 
-      {/* PRODUCTS */}
+      {/* ================= PRODUCTS ================= */}
       <section className="max-w-7xl mx-auto px-6 pb-24">
 
         {loading ? (
@@ -361,6 +455,7 @@ function Shop({ cart = [], addToCart }) {
                     onClick={() => openProduct(product)}
                     className="block w-full text-left"
                   >
+
                     <div className="aspect-square overflow-hidden bg-gray-100">
 
                       <img
@@ -372,7 +467,13 @@ function Shop({ cart = [], addToCart }) {
                       />
 
                     </div>
+
                   </button>
+
+                  {/* DETAILS HINT */}
+                  <p className="text-xs text-black mt-2">
+                    Click image to view details
+                  </p>
 
                   {/* PRODUCT HEART */}
                   <button
@@ -399,6 +500,7 @@ function Shop({ cart = [], addToCart }) {
 
                   <div className="flex justify-between items-start mt-2 gap-4">
 
+                    {/* PRODUCT NAME + PRICE */}
                     <button
                       type="button"
                       onClick={() => openProduct(product)}

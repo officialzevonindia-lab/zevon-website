@@ -47,7 +47,10 @@ function Checkout({ cart, setCart }) {
       }
 
       const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+
+      script.src =
+        "https://checkout.razorpay.com/v1/checkout.js";
+
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
 
@@ -78,7 +81,10 @@ function Checkout({ cart, setCart }) {
       return null;
     }
 
-    console.log("ORDER SAVED SUCCESSFULLY:", data);
+    console.log(
+      "ORDER SAVED SUCCESSFULLY:",
+      data
+    );
 
     return data?.[0]?.id || null;
   };
@@ -110,12 +116,17 @@ function Checkout({ cart, setCart }) {
 
     // Check Mumbai
     if (!city || city.toLowerCase() !== "mumbai") {
-      alert("Sorry, ZEVON currently delivers only within Mumbai.");
+      alert(
+        "Sorry, ZEVON currently delivers only within Mumbai."
+      );
       return;
     }
 
     // Check Maharashtra
-    if (!state || state.toLowerCase() !== "maharashtra") {
+    if (
+      !state ||
+      state.toLowerCase() !== "maharashtra"
+    ) {
       alert(
         "Sorry, ZEVON currently delivers only within Mumbai, Maharashtra."
       );
@@ -166,7 +177,9 @@ function Checkout({ cart, setCart }) {
       }
 
       setCart([]);
+
       navigate(`/order-success/${orderId}`);
+
       return;
     }
 
@@ -176,51 +189,72 @@ function Checkout({ cart, setCart }) {
     setProcessingPayment(true);
 
     try {
-      const scriptLoaded = await loadRazorpayScript();
+      // Load Razorpay
+      const scriptLoaded =
+        await loadRazorpayScript();
 
       if (!scriptLoaded) {
         alert(
           "Unable to load Razorpay payment system. Please check your internet connection and try again."
         );
+
         setProcessingPayment(false);
+
         return;
       }
 
-      // Razorpay amount is in paise
-      const amountInPaise = Math.round(total * 100);
+      // --------------------------------------------------
+      // CREATE RAZORPAY ORDER THROUGH VERCEL API
+      // --------------------------------------------------
 
-      // Create Razorpay order through Supabase Edge Function
-      const { data: razorpayOrder, error: createOrderError } =
-        await supabase.functions.invoke("razorpay-create-order", {
-          body: {
-            amount: amountInPaise,
-            currency: "INR",
-            receipt: `zevon_${Date.now()}`,
+      const createOrderResponse = await fetch(
+        "/api/create-order",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
           },
-        });
 
-      if (createOrderError) {
+          body: JSON.stringify({
+            // Send amount in RUPEES.
+            // The server converts it to paise.
+            amount: total,
+          }),
+        }
+      );
+
+      const razorpayOrder =
+        await createOrderResponse.json();
+
+      if (!createOrderResponse.ok) {
         console.error(
           "RAZORPAY CREATE ORDER ERROR:",
-          createOrderError
+          razorpayOrder
         );
 
         alert(
-          "Unable to start payment. Please try again."
+          razorpayOrder?.error ||
+            "Unable to start payment. Please try again."
         );
 
         setProcessingPayment(false);
+
         return;
       }
 
       if (!razorpayOrder?.id) {
-        console.error("Invalid Razorpay order:", razorpayOrder);
+        console.error(
+          "Invalid Razorpay order:",
+          razorpayOrder
+        );
 
         alert(
           "Unable to create payment order. Please try again."
         );
 
         setProcessingPayment(false);
+
         return;
       }
 
@@ -228,6 +262,10 @@ function Checkout({ cart, setCart }) {
         "Razorpay order created:",
         razorpayOrder
       );
+
+      // --------------------------------------------------
+      // RAZORPAY CHECKOUT
+      // --------------------------------------------------
 
       const razorpayOptions = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -257,6 +295,10 @@ function Checkout({ cart, setCart }) {
           color: "#000000",
         },
 
+        // ------------------------------------------------
+        // PAYMENT SUCCESS
+        // ------------------------------------------------
+
         handler: async function (response) {
           try {
             console.log(
@@ -264,14 +306,20 @@ function Checkout({ cart, setCart }) {
               response
             );
 
-            // Verify payment on the server
-            const {
-              data: verificationData,
-              error: verificationError,
-            } = await supabase.functions.invoke(
-              "razorpay-verify-payment",
+            // --------------------------------------------
+            // VERIFY PAYMENT THROUGH VERCEL API
+            // --------------------------------------------
+
+            const verifyResponse = await fetch(
+              "/api/verify-payment",
               {
-                body: {
+                method: "POST",
+
+                headers: {
+                  "Content-Type": "application/json",
+                },
+
+                body: JSON.stringify({
                   razorpay_order_id:
                     response.razorpay_order_id,
 
@@ -280,14 +328,20 @@ function Checkout({ cart, setCart }) {
 
                   razorpay_signature:
                     response.razorpay_signature,
-                },
+                }),
               }
             );
 
-            if (verificationError) {
+            const verificationData =
+              await verifyResponse.json();
+
+            if (
+              !verifyResponse.ok ||
+              !verificationData?.success
+            ) {
               console.error(
                 "PAYMENT VERIFICATION ERROR:",
-                verificationError
+                verificationData
               );
 
               alert(
@@ -295,20 +349,7 @@ function Checkout({ cart, setCart }) {
               );
 
               setProcessingPayment(false);
-              return;
-            }
 
-            if (!verificationData?.success) {
-              console.error(
-                "Payment verification failed:",
-                verificationData
-              );
-
-              alert(
-                "Payment could not be verified. Please contact ZEVON support."
-              );
-
-              setProcessingPayment(false);
               return;
             }
 
@@ -316,16 +357,20 @@ function Checkout({ cart, setCart }) {
               "PAYMENT VERIFIED SUCCESSFULLY"
             );
 
-            // Save verified order
+            // --------------------------------------------
+            // SAVE VERIFIED ORDER
+            // --------------------------------------------
+
             const paidOrderData = {
               ...orderData,
+
               payment_method: paymentMethod,
+
               status: "pending",
             };
 
-            const orderId = await saveOrder(
-              paidOrderData
-            );
+            const orderId =
+              await saveOrder(paidOrderData);
 
             if (!orderId) {
               setProcessingPayment(false);
@@ -341,7 +386,9 @@ function Checkout({ cart, setCart }) {
             setCart([]);
 
             // Go to order success page
-            navigate(`/order-success/${orderId}`);
+            navigate(
+              `/order-success/${orderId}`
+            );
           } catch (error) {
             console.error(
               "PAYMENT HANDLER ERROR:",
@@ -356,6 +403,10 @@ function Checkout({ cart, setCart }) {
           }
         },
 
+        // ------------------------------------------------
+        // PAYMENT WINDOW CLOSED
+        // ------------------------------------------------
+
         modal: {
           ondismiss: function () {
             console.log(
@@ -367,9 +418,15 @@ function Checkout({ cart, setCart }) {
         },
       };
 
-      const razorpay = new window.Razorpay(
-        razorpayOptions
-      );
+      // Create Razorpay checkout
+      const razorpay =
+        new window.Razorpay(
+          razorpayOptions
+        );
+
+      // ------------------------------------------------
+      // PAYMENT FAILED
+      // ------------------------------------------------
 
       razorpay.on(
         "payment.failed",
@@ -388,6 +445,7 @@ function Checkout({ cart, setCart }) {
         }
       );
 
+      // Open Razorpay
       razorpay.open();
     } catch (error) {
       console.error(
@@ -444,7 +502,9 @@ function Checkout({ cart, setCart }) {
 
             <button
               type="button"
-              onClick={() => navigate("/track-order")}
+              onClick={() =>
+                navigate("/track-order")
+              }
               className="hover:opacity-50"
             >
               Track Order
@@ -452,7 +512,9 @@ function Checkout({ cart, setCart }) {
 
             <button
               type="button"
-              onClick={() => navigate("/#categories")}
+              onClick={() =>
+                navigate("/#categories")
+              }
               className="hover:opacity-50"
             >
               Collections
@@ -460,7 +522,9 @@ function Checkout({ cart, setCart }) {
 
             <button
               type="button"
-              onClick={() => navigate("/#about")}
+              onClick={() =>
+                navigate("/#about")
+              }
               className="hover:opacity-50"
             >
               About
@@ -475,18 +539,24 @@ function Checkout({ cart, setCart }) {
             <button
               type="button"
               onClick={() =>
-                setMobileMenuOpen(!mobileMenuOpen)
+                setMobileMenuOpen(
+                  !mobileMenuOpen
+                )
               }
               className="md:hidden text-2xl leading-none"
               aria-label="Open menu"
             >
-              {mobileMenuOpen ? "✕" : "☰"}
+              {mobileMenuOpen
+                ? "✕"
+                : "☰"}
             </button>
 
             {/* WISHLIST */}
             <button
               type="button"
-              onClick={() => navigate("/wishlist")}
+              onClick={() =>
+                navigate("/wishlist")
+              }
               className="text-2xl hover:opacity-50 transition"
               aria-label="Wishlist"
             >
@@ -496,7 +566,9 @@ function Checkout({ cart, setCart }) {
             {/* CART */}
             <button
               type="button"
-              onClick={() => navigate("/cart")}
+              onClick={() =>
+                navigate("/cart")
+              }
               className="relative text-xl"
               aria-label="Cart"
             >

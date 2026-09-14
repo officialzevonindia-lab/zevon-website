@@ -511,9 +511,27 @@ function Shop({ cart = [], addToCart }) {
                         {product.name}
                       </h2>
 
-                      <p className="mt-1 text-black/60">
-                        ₹{product.price}
-                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="text-base font-medium text-black">
+                          ₹{product.price}
+                        </span>
+
+                        {Number(product.mrp) > Number(product.price) && (
+                          <>
+                            <span className="text-sm text-black/40 line-through">
+                              ₹{product.mrp}
+                            </span>
+
+                            <span className="text-xs font-medium text-black border border-black/20 px-2 py-1">
+                              {Math.round(
+                                ((Number(product.mrp) - Number(product.price)) /
+                                  Number(product.mrp)) *
+                                  100
+                              )}% OFF
+                            </span>
+                          </>
+                        )}
+                      </div>
 
                     </button>
 

@@ -252,9 +252,41 @@ function Cart({ cart, setCart }) {
                       {item.name}
                     </h2>
 
-                    <p className="text-black/60 mt-2">
-                      {item.price}
-                    </p>
+                    {/* PRICE + MRP + DISCOUNT */}
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+
+                      <span className="text-base font-medium text-black">
+                        {item.price}
+                      </span>
+
+                      {Number(item.mrp) >
+                        Number(
+                          item.price
+                            .replace("₹", "")
+                            .replace(",", "")
+                        ) && (
+                        <>
+                          <span className="text-sm text-black/40 line-through">
+                            ₹{Number(item.mrp).toLocaleString("en-IN")}
+                          </span>
+
+                          <span className="text-xs font-medium text-black border border-black/20 px-2 py-1">
+                            {Math.round(
+                              ((Number(item.mrp) -
+                                Number(
+                                  item.price
+                                    .replace("₹", "")
+                                    .replace(",", "")
+                                )) /
+                                Number(item.mrp)) *
+                                100
+                            )}
+                            % OFF
+                          </span>
+                        </>
+                      )}
+
+                    </div>
 
                     {/* QUANTITY */}
                     <div className="flex items-center gap-3 mt-4">

@@ -81,10 +81,7 @@ function Checkout({ cart, setCart }) {
       return null;
     }
 
-    console.log(
-      "ORDER SAVED SUCCESSFULLY:",
-      data
-    );
+    console.log("ORDER SAVED SUCCESSFULLY:", data);
 
     return data?.[0]?.id || null;
   };
@@ -190,8 +187,7 @@ function Checkout({ cart, setCart }) {
 
     try {
       // Load Razorpay
-      const scriptLoaded =
-        await loadRazorpayScript();
+      const scriptLoaded = await loadRazorpayScript();
 
       if (!scriptLoaded) {
         alert(
@@ -956,40 +952,81 @@ function Checkout({ cart, setCart }) {
 
                 <div className="space-y-5">
 
-                  {cart.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex gap-4"
-                    >
+                  {cart.map((item) => {
+                    const sellingPrice =
+                      typeof item.price === "number"
+                        ? item.price
+                        : Number(
+                            String(item.price)
+                              .replace("₹", "")
+                              .replace(/,/g, "")
+                          );
 
-                      <div className="w-20 h-20 bg-gray-100 overflow-hidden flex-shrink-0">
+                    const hasDiscount =
+                      Number(item.mrp) > sellingPrice;
 
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
+                    const discountPercentage =
+                      hasDiscount
+                        ? Math.round(
+                            ((Number(item.mrp) -
+                              sellingPrice) /
+                              Number(item.mrp)) *
+                              100
+                          )
+                        : 0;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex gap-4"
+                      >
+
+                        <div className="w-20 h-20 bg-gray-100 overflow-hidden flex-shrink-0">
+
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+
+                        </div>
+
+                        <div className="flex-1">
+
+                          <p className="font-medium">
+                            {item.name}
+                          </p>
+
+                          <p className="text-sm text-black/50 mt-1">
+                            Qty: {item.quantity}
+                          </p>
+
+                          {/* PRICE + MRP + DISCOUNT */}
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+
+                            <span className="text-sm font-medium text-black">
+                              ₹{sellingPrice.toLocaleString("en-IN")}
+                            </span>
+
+                            {hasDiscount && (
+                              <>
+                                <span className="text-xs text-black/40 line-through">
+                                  ₹{Number(item.mrp).toLocaleString("en-IN")}
+                                </span>
+
+                                <span className="text-[10px] font-medium text-black border border-black/20 px-2 py-1">
+                                  {discountPercentage}% OFF
+                                </span>
+                              </>
+                            )}
+
+                          </div>
+
+                        </div>
 
                       </div>
-
-                      <div className="flex-1">
-
-                        <p className="font-medium">
-                          {item.name}
-                        </p>
-
-                        <p className="text-sm text-black/50 mt-1">
-                          Qty: {item.quantity}
-                        </p>
-
-                        <p className="text-sm mt-1">
-                          {item.price}
-                        </p>
-
-                      </div>
-
-                    </div>
-                  ))}
+                    );
+                  })}
 
                 </div>
 
